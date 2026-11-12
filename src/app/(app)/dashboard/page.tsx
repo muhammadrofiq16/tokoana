@@ -1,18 +1,18 @@
 import Link from "next/link";
 import {
-  Package,
-  Wallet,
-  ShoppingBag,
   TrendingUp,
   AlertTriangle,
-  Truck,
+  Receipt,
+  AlertCircle,
+  CheckCircle2,
+  Box,
+  ShieldCheck,
+  PackagePlus,
   ArrowRight,
-  Clock,
-  Sparkles,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { formatRupiah, formatNumber } from "@/lib/utils";
+import { formatRupiah } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
     periodLabel = "Hari Ini";
   } else if (period === "week") {
-    const day = now.getDay() || 7; // Get Monday
+    const day = now.getDay() || 7;
     startDate = new Date(now);
     startDate.setDate(now.getDate() - day + 1);
     startDate.setHours(0, 0, 0, 0);
@@ -51,10 +51,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   } else if (period === "all") {
     startDate = null;
     endDate = null;
-    periodLabel = "Semua Waktu";
+    periodLabel = "Semua";
   }
 
-  // 1. Fetch total products and stock units
+  // 1. Products & Stock
   const products = await prisma.product.findMany({
     include: {
       units: {
@@ -62,13 +62,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         orderBy: { sortOrder: "asc" },
       },
     },
+    orderBy: { stock: "asc" },
   });
 
   const totalStockUnits = products.reduce((acc, p) => acc + p.stock, 0);
   const criticalProducts = products.filter((p) => p.stock <= p.minStock);
   const criticalProductsCount = criticalProducts.length;
 
-  // 2. Inventory Asset Value (Admin only)
+  // 2. Inventory Value (Admin only)
   const inventoryValue = isAdmin
     ? products.reduce((acc, p) => acc + p.stock * Number(p.costPrice), 0)
     : 0;
@@ -79,14 +80,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     transWhere.createdAt = { gte: startDate, lte: endDate };
   }
 
-  const transactions = await prisma.transaction.findMany({
-    where: transWhere,
-  });
+  const [transactions, recentTransactions] = await Promise.all([
+    prisma.transaction.findMany({ where: transWhere }),
+    prisma.transaction.findMany({
+      take: 6,
+      orderBy: { id: "desc" },
+      include: { customer: true },
+    }),
+  ]);
 
   const salesValue = transactions.reduce((acc, t) => acc + Number(t.totalAmount), 0);
   const transactionsCount = transactions.length;
 
-  // 4. Expenses / Supplier Purchases from StockMovements (type = 'in')
+  // 4. Expenses (Supplier restocks)
   const expenseWhere: Record<string, unknown> = { type: "in" };
   if (startDate && endDate) {
     expenseWhere.createdAt = { gte: startDate, lte: endDate };
@@ -102,266 +108,330 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     0
   );
 
-  const netProfit = salesValue - expenseValue;
+  // Top 5 restock priority products
+  const restockPriority = criticalProducts.slice(0, 5);
 
-  // 5. Restock priority list (lowest stock first)
-  const restockProducts = criticalProducts
-    .sort((a, b) => a.stock - b.stock)
-    .slice(0, 5);
-
-  const periods = [
-    { key: "today", label: "Hari Ini" },
-    { key: "week", label: "Pekan Ini" },
-    { key: "month", label: "Bulan Ini" },
-    { key: "all", label: "Semua Waktu" },
-  ];
+  const nowFormatted = new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(now);
 
   return (
-    <div className="space-y-8">
-      {/* Page Title & Period Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Page Header & Period Filter */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Dashboard Ringkasan</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Pantau arus transaksi, stok barang, dan kinerja penjualan toko secara real-time.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Ringkasan Toko</h2>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Operasional Normal
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 font-medium">{nowFormatted}</p>
         </div>
 
-        {/* Period Selector Tabs */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs self-start sm:self-auto">
-          {periods.map((p) => (
-            <Link
-              key={p.key}
-              href={`/dashboard?period=${p.key}`}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                period === p.key
-                  ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              }`}
-            >
-              {p.label}
-            </Link>
-          ))}
+        {/* Period Toggle Buttons */}
+        <div className="bg-brand-50 border border-brand-200/50 p-1 rounded-xl flex items-center overflow-x-auto whitespace-nowrap gap-1 text-xs font-semibold text-slate-600">
+          <Link
+            href="/dashboard?period=today"
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              period === "today"
+                ? "bg-white text-brand-800 shadow-xs border border-brand-200/60 font-bold"
+                : "hover:text-brand-800"
+            }`}
+          >
+            Hari Ini
+          </Link>
+          <Link
+            href="/dashboard?period=week"
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              period === "week"
+                ? "bg-white text-brand-800 shadow-xs border border-brand-200/60 font-bold"
+                : "hover:text-brand-800"
+            }`}
+          >
+            Pekan Ini
+          </Link>
+          <Link
+            href="/dashboard?period=month"
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              period === "month"
+                ? "bg-white text-brand-800 shadow-xs border border-brand-200/60 font-bold"
+                : "hover:text-brand-800"
+            }`}
+          >
+            Bulan Ini
+          </Link>
+          <Link
+            href="/dashboard?period=all"
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              period === "all"
+                ? "bg-white text-brand-800 shadow-xs border border-brand-200/60 font-bold"
+                : "hover:text-brand-800"
+            }`}
+          >
+            Semua
+          </Link>
         </div>
       </div>
 
-      {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Omset Penjualan */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Omset Penjualan ({periodLabel})
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-              <ShoppingBag className="w-5 h-5" />
+      {/* Key Summary Metric Cards (Exact match to original app) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Card 1: Omzet / Penjualan (HIGHLIGHTED - Green gradient) */}
+        <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-5 shadow-md flex flex-col justify-between text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
+          <div className="relative">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-xs font-semibold text-brand-100">Omzet Penjualan</span>
+                <p className="text-[10px] text-brand-200 capitalize mt-0.5">
+                  Periode {periodLabel}
+                </p>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-2xl font-black text-slate-800">{formatRupiah(salesValue)}</h3>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-              <span className="font-semibold text-emerald-600">{transactionsCount}</span> transaksi berhasil
-            </p>
+            <div className="mt-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-black tracking-tight">
+                  {formatRupiah(salesValue)}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs font-medium text-brand-100">
+                <div className="flex items-center gap-1.5">
+                  <Receipt className="w-3.5 h-3.5" />
+                  <span className="font-bold text-white">{transactionsCount}</span>
+                  <span>transaksi ({periodLabel.toLowerCase()})</span>
+                </div>
+                {isAdmin && expenseValue > 0 && (
+                  <div
+                    className="text-[10px] bg-white/15 px-2 py-0.5 rounded font-medium text-white/90"
+                    title="Total Pembelian Suplier"
+                  >
+                    Beli: {formatRupiah(expenseValue)}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Pengeluaran Pembelian Suplier */}
-        {isAdmin && (
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Belanja Suplier ({periodLabel})
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
-                <Truck className="w-5 h-5" />
+        {/* Card 2: Stok Menipis (HIGHLIGHTED - Amber/Warning) */}
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-100/50 rounded-full -translate-y-8 translate-x-8" />
+          <div className="relative">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-semibold text-amber-700">Stok Menipis</span>
+              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-200/60 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
               </div>
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-black text-slate-800">{formatRupiah(expenseValue)}</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Total modal stok masuk dicatat
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Laba Bersih / Arus Kas */}
-        {isAdmin && (
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Laba Bersih ({periodLabel})
-              </span>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
-                netProfit >= 0
-                  ? "bg-teal-50 text-teal-600 border-teal-100"
-                  : "bg-amber-50 text-amber-600 border-amber-100"
-              }`}>
-                <TrendingUp className="w-5 h-5" />
+            <div className="mt-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-black text-amber-800 tracking-tight">
+                  {criticalProductsCount}
+                </span>
+                <span className="text-xs font-semibold text-amber-600">produk kritis</span>
+              </div>
+              <div className="mt-2">
+                {criticalProductsCount > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-200/60 text-amber-800 text-[11px] font-bold">
+                    <AlertCircle className="w-3 h-3" />
+                    Perlu PO segera
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-[11px] font-bold">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Semua stok aman
+                  </span>
+                )}
               </div>
             </div>
-            <div className="mt-3">
-              <h3 className={`text-2xl font-black ${netProfit >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                {formatRupiah(netProfit)}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Selisih omset dan belanja stok
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Total Stok Fisik Unit */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Total Stok Unit
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-2xl font-black text-slate-800">{formatNumber(totalStockUnits)} <span className="text-sm font-normal text-slate-500">Unit</span></h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Dari {products.length} varian produk terdaftar
-            </p>
           </div>
         </div>
 
-        {/* Modal Aset Inventaris (Admin) */}
-        {isAdmin && (
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Nilai Aset Toko (Modal)
-              </span>
-              <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
-                <Wallet className="w-5 h-5" />
+        {/* Card 3: Total Stok & Nilai Persediaan */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-semibold text-slate-500">Stok &amp; Persediaan</span>
+            <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-200/40 flex items-center justify-center">
+              <Box className="w-4 h-4 text-brand-600" />
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            <div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-black text-slate-900 tracking-tight">
+                  {totalStockUnits.toLocaleString("id-ID")}
+                </span>
+                <span className="text-xs font-semibold text-slate-500">unit</span>
               </div>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">Total stok fisik</p>
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-black text-slate-800">{formatRupiah(inventoryValue)}</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Kalkulasi stok x harga pokok modal
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Peringatan Stok Kritis */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Perlu Restock Segera
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-2xl font-black text-amber-700">{criticalProductsCount} <span className="text-sm font-normal text-slate-500">Produk</span></h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Stok di bawah batas minimum
-            </p>
+            {isAdmin ? (
+              <div className="pt-2.5 border-t border-slate-100">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-bold text-brand-700">
+                    Rp {(inventoryValue / 1000000).toFixed(1)}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">Juta</span>
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                  Estimasi nilai persediaan
+                </p>
+              </div>
+            ) : (
+              <div className="pt-2.5 border-t border-slate-100">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Akses Kasir</span>
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                  Mode operasional POS aktif
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Quick Action POS Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl shadow-emerald-600/20 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold tracking-wide backdrop-blur-md mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            Kasir Siap Melayani
-          </span>
-          <h2 className="text-xl md:text-2xl font-black">Buka Layanan Kasir Point of Sale (POS)</h2>
-          <p className="text-emerald-100 text-xs md:text-sm mt-1 max-w-xl">
-            Input transaksi penjualan eceran dan grosir, pilih multi-satuan (Pcs, Dus), barcode scanner, serta cetak struk pembayaran langsung.
-          </p>
-        </div>
-        <Link
-          href="/kasir"
-          className="px-6 py-3.5 rounded-2xl bg-white text-emerald-800 font-bold text-sm flex items-center gap-2 hover:bg-emerald-50 transition-all shadow-md shrink-0"
-        >
-          <span>Mulai Transaksi Kasir</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
-
-      {/* Restock Priority Table */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+      {/* Barang Prioritas Restock Table */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="font-extrabold text-base text-slate-800">Barang Prioritas Restock</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Daftar produk yang stoknya sudah menipis atau habis.</p>
+            <h3 className="font-bold text-slate-900 text-base">Barang Prioritas Restock</h3>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">
+              Item dengan stok berada di bawah batas minimum keamanan
+            </p>
           </div>
           <Link
             href="/stok"
-            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            className="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1"
           >
             <span>Catat Stok Masuk</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {restockProducts.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-xs">
-            🎉 Semua stok barang dalam kondisi aman di atas batas minimum.
+        {restockPriority.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 flex flex-col items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
+            <p className="text-xs font-semibold">Semua persediaan barang dalam batas aman.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-3.5">Nama Barang & SKU</th>
-                  <th className="px-6 py-3.5">Kategori</th>
-                  <th className="px-6 py-3.5">Sisa Stok</th>
-                  <th className="px-6 py-3.5">Batas Minimal</th>
-                  <th className="px-6 py-3.5">Status</th>
-                  <th className="px-6 py-3.5">Suplier</th>
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[11px] font-bold">
+                  <th className="py-3 font-semibold">KODE SKU</th>
+                  <th className="py-3 font-semibold">NAMA BARANG</th>
+                  <th className="py-3 font-semibold">KATEGORI</th>
+                  <th className="py-3 font-semibold text-center">SISA STOK</th>
+                  <th className="py-3 font-semibold text-center">MIN STOK</th>
+                  <th className="py-3 font-semibold text-right">AKSI</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                {restockProducts.map((p) => {
-                  const isHabis = p.stock <= 0;
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-slate-800 text-sm">{p.name}</p>
-                        <p className="text-slate-400 text-[11px] font-mono mt-0.5">{p.sku}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-[11px]">
-                          {p.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`font-black text-sm ${isHabis ? "text-rose-600" : "text-amber-600"}`}>
-                          {p.stock} {p.unit}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500 font-semibold">
-                        {p.minStock} {p.unit}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide inline-flex items-center gap-1 ${
-                            isHabis
-                              ? "bg-rose-100 text-rose-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isHabis ? "bg-rose-500" : "bg-amber-500"}`}></span>
-                          {isHabis ? "Stok Habis" : "Menipis"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {p.supplierName || "Suplier Umum"}
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody className="divide-y divide-slate-100">
+                {restockPriority.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 font-mono text-slate-500">{p.sku}</td>
+                    <td className="py-3.5 font-bold text-slate-800 text-sm">{p.name}</td>
+                    <td className="py-3.5 text-slate-500">{p.category}</td>
+                    <td className="py-3.5 text-center">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-black ${
+                          p.stock <= 0
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {p.stock} {p.unit}
+                      </span>
+                    </td>
+                    <td className="py-3.5 text-center text-slate-500 font-semibold">
+                      {p.minStock} {p.unit}
+                    </td>
+                    <td className="py-3.5 text-right">
+                      <Link
+                        href="/stok"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-brand-50 hover:bg-brand-100 text-brand-800 text-xs font-bold rounded-lg border border-brand-200 transition-all"
+                      >
+                        <PackagePlus className="w-3.5 h-3.5 text-brand-600" />
+                        <span>Restock</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Transaksi Terakhir */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base">Transaksi Penjualan Terakhir</h3>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">
+              Riwayat penjualan kasir yang baru saja diproses
+            </p>
+          </div>
+          <Link
+            href="/transaksi"
+            className="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1"
+          >
+            <span>Lihat Semua Transaksi</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {recentTransactions.length === 0 ? (
+          <div className="py-8 text-center text-slate-400">
+            <p className="text-xs font-medium">Belum ada transaksi penjualan.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[11px] font-bold">
+                  <th className="py-3 font-semibold">INVOICE</th>
+                  <th className="py-3 font-semibold">WAKTU</th>
+                  <th className="py-3 font-semibold">PELANGGAN</th>
+                  <th className="py-3 font-semibold">METODE</th>
+                  <th className="py-3 font-semibold text-right">TOTAL BELANJA</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentTransactions.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 font-mono font-bold text-slate-800">{t.invoiceNumber}</td>
+                    <td className="py-3.5 text-slate-500 whitespace-nowrap">
+                      {new Intl.DateTimeFormat("id-ID", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        day: "numeric",
+                        month: "short",
+                      }).format(new Date(t.createdAt))}
+                    </td>
+                    <td className="py-3.5 text-slate-700 font-medium">
+                      {t.customer?.name || t.customerName || "Pelanggan Umum"}
+                    </td>
+                    <td className="py-3.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
+                        {t.paymentMethod}
+                      </span>
+                    </td>
+                    <td className="py-3.5 text-right font-black text-slate-900 text-sm">
+                      {formatRupiah(Number(t.totalAmount))}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

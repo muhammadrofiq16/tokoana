@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Package,
   Search,
@@ -12,7 +13,8 @@ import {
   Barcode,
   Layers,
   Calendar,
-  Sparkles,
+  Database,
+  PackagePlus,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
 import ProductModal from "@/components/products/ProductModal";
@@ -124,13 +126,18 @@ export default function ProductsClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header & New Product Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Master Data Barang</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Kelola inventaris, barcode, SKU, dan sistem harga multi-satuan bertingkat.
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span>INVENTARIS &amp; LOGISTIK</span>
+            <span>•</span>
+            <span className="text-brand-700 font-semibold">SISTEM TOKO</span>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">Master Data Barang</h2>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Kelola data inventaris, stok, harga barang, dan pencatatan stok masuk dari supplier.
           </p>
         </div>
 
@@ -139,11 +146,34 @@ export default function ProductsClient({
             setEditingProduct(null);
             setIsModalOpen(true);
           }}
-          className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-emerald-600/30 transition-all self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2.5 rounded-xl bg-brand-dark hover:bg-brand-800 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Tambah Barang Baru</span>
         </button>
+      </div>
+
+      {/* Main Tab Navigation */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+        <div className="flex items-center border-b border-slate-200/80 px-5 pt-1">
+          <Link
+            href="/products"
+            className="px-4 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 border-brand-600 text-brand-800"
+          >
+            <Database className="w-4 h-4" />
+            <span>Data Inventaris</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-100 text-brand-800">
+              {totalCount}
+            </span>
+          </Link>
+          <Link
+            href="/stok"
+            className="px-4 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+          >
+            <PackagePlus className="w-4 h-4" />
+            <span>Catat Stok Masuk</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Status Summary Bar */}

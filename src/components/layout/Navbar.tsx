@@ -1,5 +1,7 @@
-import { Store, Clock, ShieldCheck, User as UserIcon } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Plus, Menu } from "lucide-react";
 import prisma from "@/lib/prisma";
+import NotificationDropdown from "./NotificationDropdown";
 
 interface NavbarProps {
   user: {
@@ -8,51 +10,106 @@ interface NavbarProps {
     email: string;
     role: string;
   };
+  onOpenMobileSidebar?: () => void;
 }
 
-export default async function Navbar({ user }: NavbarProps) {
-  let storeName = "Toko Berkah Kelontong";
-  let storeStatus = "Buka (Operasional Normal)";
-  let workShift = "Shift 1 (Pagi)";
+export default async function Navbar({ user, onOpenMobileSidebar }: NavbarProps) {
+  // Format Indonesian date
+  const now = new Date();
+  const dateStr = new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(now);
+
+  // Fetch expiring and low stock products
+  let lowStockProducts: Array<{ id: number; name: string; stock: number; minStock: number; unit: string }> = [];
+  let expiringProducts: Array<{ id: number; name: string; stock: number; unit: string; expiryDate: Date | null }> = [];
 
   try {
-    const settings = await prisma.setting.findMany();
-    const map = new Map(settings.map((s) => [s.key, s.value]));
-    if (map.get("store_name")) storeName = map.get("store_name")!;
-    if (map.get("store_status")) storeStatus = map.get("store_status")!;
-    if (map.get("work_shift")) workShift = map.get("work_shift")!;
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    const [lowStock, expiring] = await Promise.all([
+      prisma.product.findMany({
+        where: {
+          stock: {
+            lte: prisma.product.fields.minStock,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          stock: true,
+          minStock: true,
+          unit: true,
+        },
+        take: 10,
+      }),
+      prisma.product.findMany({
+        where: {
+          expiryDate: {
+            not: null,
+            lte: thirtyDaysFromNow,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          stock: true,
+          unit: true,
+          expiryDate: true,
+        },
+        orderBy: {
+          expiryDate: "asc",
+        },
+        take: 10,
+      }),
+    ]);
+
+    lowStockProducts = lowStock;
+    expiringProducts = expiring;
   } catch (e) {
-    console.error("Could not load settings for Navbar:", e);
+    console.error("Error fetching notification products:", e);
   }
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 sticky top-0 z-20 shadow-xs">
+    <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-xs">
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Store className="w-5 h-5 text-emerald-600" />
-          <span className="font-bold text-slate-800 text-sm md:text-base">{storeName}</span>
-        </div>
-        <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          {storeStatus}
-        </span>
+        {/* Mobile Menu Button - toggles sidebar */}
+        <button
+          type="button"
+          onClick={onOpenMobileSidebar}
+          className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+          aria-label="Buka Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-          <Clock className="w-4 h-4 text-slate-400" />
-          <span>{workShift}</span>
+      {/* Right Header Actions */}
+      <div className="flex items-center gap-3 md:gap-4">
+        {/* Date & Shift Info */}
+        <div className="hidden lg:flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-2 rounded-xl">
+          <Calendar className="w-4 h-4 text-slate-400" />
+          <span>{dateStr}</span>
         </div>
 
-        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-          <div className="hidden lg:block text-left">
-            <p className="text-xs font-bold text-slate-800 leading-tight">{user.name}</p>
-            <p className="text-[10px] text-slate-400 capitalize">{user.role}</p>
-          </div>
-        </div>
+        {/* Primary Action Button: + Catat Stok */}
+        <Link
+          href="/stok"
+          className="bg-brand-dark hover:bg-brand-800 text-white font-semibold text-sm px-3 md:px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden md:inline">Catat Stok</span>
+        </Link>
+
+        {/* Notification Bell Dropdown */}
+        <NotificationDropdown
+          lowStockProducts={lowStockProducts}
+          expiringProducts={expiringProducts}
+        />
       </div>
     </header>
   );

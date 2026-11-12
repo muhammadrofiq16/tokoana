@@ -179,34 +179,50 @@ export default function TransactionsClient({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Title & Period Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-            Riwayat Keuangan & Laporan
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Rekap transaksi penjualan kasir, belanja stok suplier, dan analisis laba bersih.
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span>KEUANGAN &amp; OPERASIONAL</span>
+            <span>•</span>
+            <span className="text-brand-700 font-semibold">SISTEM TOKO</span>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
+            Riwayat Transaksi &amp; Arus Kas
+          </h2>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Pencatatan terpadu penjualan kasir (pemasukan), pembelian suplier (pengeluaran), serta neraca balance operasional.
           </p>
         </div>
 
-        {/* Period Pills */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs self-start sm:self-auto">
-          {periods.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => handlePeriodChange(p.key)}
-              className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
-                period === p.key
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          {/* Period Pills */}
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center overflow-x-auto whitespace-nowrap gap-1 text-xs font-semibold text-slate-600">
+            {periods.map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => handlePeriodChange(p.key)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg transition-all cursor-pointer",
+                  period === p.key
+                    ? "bg-white text-brand-800 shadow-xs border border-slate-200 font-bold"
+                    : "hover:text-slate-900"
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all border border-slate-200 shadow-xs cursor-pointer"
+          >
+            <span>Cetak</span>
+          </button>
         </div>
       </div>
 

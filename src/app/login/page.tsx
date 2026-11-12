@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Store, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from "lucide-react";
+import { Store, Lock, Mail, Eye, EyeOff, LogIn, AlertCircle, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ export default function LoginPage() {
       router.push(data.redirect || "/dashboard");
       router.refresh();
     } catch {
-      setError("Koneksi gagal. Silakan coba lagi.");
+      setError("Koneksi gagal. Silakan periksa jaringan dan coba lagi.");
       setLoading(false);
     }
   };
@@ -47,121 +48,141 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Brand Card */}
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-          <div className="bg-gradient-to-tr from-emerald-600 to-teal-500 p-8 text-white text-center relative overflow-hidden">
-            <div className="absolute -top-12 -right-12 w-36 h-36 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-lg">
-              <Store className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Toko Ana POS</h1>
-            <p className="text-emerald-100 text-xs mt-1">Sistem Point of Sale & Inventaris Toko Retail</p>
+    <div className="bg-slate-50 text-slate-800 antialiased min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decorative Elements matching original app */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Brand Card Header */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-700 to-brand-500 text-white shadow-lg shadow-brand-500/20 mb-3">
+            <Store className="w-8 h-8" />
           </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">TOKO ANA</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            SIKOL POS &bull; Sistem Informasi Kasir &amp; Inventaris Toko
+          </p>
+        </div>
 
-          <div className="p-8">
-            {error && (
-              <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-                <span>{error}</span>
+        {/* Main Login Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xl p-7 space-y-6">
+          {error && (
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-rose-700 font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email Input */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+              >
+                Alamat Email
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  id="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@toko.com"
+                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-medium"
+                />
               </div>
-            )}
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Alamat Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@toko.com"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            {/* Password Input */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
                   Kata Sandi
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                  />
-                </div>
               </div>
-
-              <div className="flex items-center justify-between text-xs pt-1">
-                <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="rounded-md border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span>Ingat saya di perangkat ini</span>
-                </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+            </div>
 
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500"
+                />
+                <span className="text-xs font-medium text-slate-600">Ingat perangkat ini</span>
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand-dark hover:bg-brand-800 active:bg-brand-900 text-white font-bold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg shadow-brand-700/20 transition-all flex items-center justify-center gap-2 text-sm mt-2 disabled:opacity-50"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>{loading ? "Memproses..." : "Masuk ke Sistem"}</span>
+            </button>
+          </form>
+
+          {/* Quick Demo Accounts */}
+          <div className="pt-2 border-t border-slate-100">
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>Pilihan Akun Cepat</span>
+            </p>
+            <div className="grid grid-cols-2 gap-2">
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50 cursor-pointer"
+                type="button"
+                onClick={() => fillCredentials("admin@toko.com")}
+                className="p-2 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 text-left transition-all"
               >
-                {loading ? (
-                  <span className="inline-block animate-spin mr-2">⏳</span>
-                ) : (
-                  <>
-                    <span>Masuk ke Sistem POS</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
+                <div className="font-bold text-xs text-slate-800">Admin Toko</div>
+                <div className="text-[10px] text-slate-500 truncate">admin@toko.com</div>
               </button>
-            </form>
-
-            {/* Quick Login Helper */}
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-3 flex items-center justify-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Akun Bawaan (Klik Cepat)</span>
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => fillCredentials("admin@toko.com")}
-                  className="p-2.5 rounded-xl border border-amber-200 bg-amber-50/60 hover:bg-amber-100/70 text-amber-900 font-semibold transition-all text-left"
-                >
-                  <p className="font-bold text-[11px] text-amber-700 uppercase">Peran Admin</p>
-                  <p className="truncate text-slate-600">admin@toko.com</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillCredentials("kasir@toko.com")}
-                  className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100/70 text-blue-900 font-semibold transition-all text-left"
-                >
-                  <p className="font-bold text-[11px] text-blue-700 uppercase">Peran Kasir</p>
-                  <p className="truncate text-slate-600">kasir@toko.com</p>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => fillCredentials("kasir@toko.com")}
+                className="p-2 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 text-left transition-all"
+              >
+                <div className="font-bold text-xs text-slate-800">Kasir 1</div>
+                <div className="text-[10px] text-slate-500 truncate">kasir@toko.com</div>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Footer Notice */}
+        <p className="text-center text-xs text-slate-400 mt-6 font-medium">
+          &copy; {new Date().getFullYear()} Toko Ana. Seluruh hak cipta dilindungi.
+        </p>
       </div>
     </div>
   );

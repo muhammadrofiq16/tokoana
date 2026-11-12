@@ -1,19 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  PackagePlus,
-  Package,
+  Monitor,
   Users,
   Receipt,
-  Settings,
+  LayoutGrid,
+  Boxes,
+  PackageSearch,
+  PackagePlus,
   UserCog,
+  Sliders,
   LogOut,
   Store,
-  ChevronRight,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +27,24 @@ interface SidebarProps {
     email: string;
     role: string;
   };
+  storeName?: string;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({
+  user,
+  storeName = "Toko Ana",
+  isOpenMobile = false,
+  onCloseMobile,
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const isAdmin = user.role === "admin";
+
+  const isBarangOrStokActive =
+    pathname.startsWith("/products") || pathname.startsWith("/stok");
+  const [openBarangMenu, setOpenBarangMenu] = useState(isBarangOrStokActive);
 
   const handleLogout = async () => {
     try {
@@ -40,235 +56,364 @@ export default function Sidebar({ user }: SidebarProps) {
     }
   };
 
-  const isAdmin = user.role === "admin";
-
-  const mainNav = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      active: pathname === "/dashboard",
-    },
-    {
-      label: "Kasir POS",
-      href: "/kasir",
-      icon: ShoppingCart,
-      active: pathname.startsWith("/kasir"),
-      badge: "Utama",
-    },
-    {
-      label: "Stok Masuk",
-      href: "/stok",
-      icon: PackagePlus,
-      active: pathname.startsWith("/stok"),
-    },
-  ];
-
-  const masterNav = [
-    {
-      label: "Data Barang",
-      href: "/products",
-      icon: Package,
-      active: pathname.startsWith("/products"),
-    },
-    {
-      label: "Pelanggan",
-      href: "/pelanggan",
-      icon: Users,
-      active: pathname.startsWith("/pelanggan"),
-    },
-  ];
-
-  const reportNav = [
-    {
-      label: "Transaksi & Laporan",
-      href: "/transaksi",
-      icon: Receipt,
-      active: pathname.startsWith("/transaksi") || pathname.startsWith("/laporan"),
-    },
-  ];
-
-  const systemNav = [
-    {
-      label: "Pengaturan Toko",
-      href: "/pengaturan",
-      icon: Settings,
-      active: pathname.startsWith("/pengaturan"),
-    },
-    {
-      label: "Manajemen Pengguna",
-      href: "/pengguna",
-      icon: UserCog,
-      active: pathname.startsWith("/pengguna"),
-    },
-  ];
-
   return (
-    <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col shrink-0 h-screen sticky top-0 border-r border-slate-800">
-      {/* Brand Header */}
-      <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-          <Store className="w-6 h-6" />
-        </div>
-        <div>
-          <h1 className="font-bold text-lg text-white leading-tight tracking-tight">Toko Ana</h1>
-          <p className="text-xs text-slate-400 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Sistem POS Retail
-          </p>
-        </div>
-      </div>
+    <>
+      {/* Mobile Sidebar Backdrop */}
+      {isOpenMobile && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/50 lg:hidden"
+          onClick={onCloseMobile}
+        />
+      )}
 
-      {/* Nav Menu Items */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {/* Main Group */}
-        <div>
-          <div className="px-3 mb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Menu Kasir & Utama
+      {/* Sidebar Navigation */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 transition-transform duration-300 lg:sticky lg:top-0 lg:translate-x-0 h-screen overflow-y-auto",
+          isOpenMobile ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="p-4">
+          {/* Logo & Brand Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-700 font-bold text-xl shrink-0">
+                <Store className="w-5 h-5 text-brand-700" />
+              </div>
+              <div className="overflow-hidden min-w-0">
+                <h1
+                  className="font-extrabold text-base text-slate-900 leading-tight tracking-tight truncate"
+                  title={storeName}
+                >
+                  {storeName}
+                </h1>
+                <p className="text-[11px] text-slate-400 font-medium truncate">
+                  Inventaris &amp; Kasir
+                </p>
+              </div>
+            </div>
+
+            {/* Close Sidebar Button (Mobile) */}
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                className="lg:hidden p-2 text-slate-400 hover:bg-slate-100 rounded-lg shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
-          <nav className="space-y-1">
-            {mainNav.map((item) => {
-              const Icon = item.icon;
-              return (
+
+          {/* MENU UTAMA Section */}
+          <div className="mb-2">
+            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-3">
+              MENU UTAMA
+            </span>
+          </div>
+
+          <nav className="space-y-0.5">
+            {/* Kasir POS */}
+            <Link
+              href="/kasir"
+              onClick={onCloseMobile}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                pathname.startsWith("/kasir")
+                  ? "bg-brand-100/70 text-brand-800"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              )}
+            >
+              <Monitor
+                className={cn(
+                  "w-4.5 h-4.5",
+                  pathname.startsWith("/kasir") ? "text-brand-700" : "text-slate-400"
+                )}
+              />
+              <span>Kasir POS</span>
+            </Link>
+
+            {isAdmin && (
+              <>
+                {/* Pelanggan & Suplier */}
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  href="/pelanggan"
+                  onClick={onCloseMobile}
                   className={cn(
-                    "flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group",
-                    item.active
-                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                    pathname.startsWith("/pelanggan")
+                      ? "bg-brand-100/70 text-brand-800"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className={cn("w-5 h-5", item.active ? "text-white" : "text-slate-400 group-hover:text-emerald-400")} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span className="text-[10px] uppercase font-bold tracking-wide px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      {item.badge}
-                    </span>
-                  )}
+                  <Users
+                    className={cn(
+                      "w-4.5 h-4.5",
+                      pathname.startsWith("/pelanggan")
+                        ? "text-brand-700"
+                        : "text-slate-400"
+                    )}
+                  />
+                  <span>Pelanggan &amp; Suplier</span>
                 </Link>
-              );
-            })}
+
+                {/* Riwayat Transaksi */}
+                <Link
+                  href="/transaksi"
+                  onClick={onCloseMobile}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                    pathname.startsWith("/transaksi") || pathname.startsWith("/laporan")
+                      ? "bg-brand-100/70 text-brand-800"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  )}
+                >
+                  <Receipt
+                    className={cn(
+                      "w-4.5 h-4.5",
+                      pathname.startsWith("/transaksi") || pathname.startsWith("/laporan")
+                        ? "text-brand-700"
+                        : "text-slate-400"
+                    )}
+                  />
+                  <span>Riwayat Transaksi</span>
+                </Link>
+              </>
+            )}
+
+            {/* DATA & KELOLA Section */}
+            <div className="pt-2 pb-1">
+              <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-3">
+                DATA &amp; KELOLA
+              </span>
+            </div>
+
+            {/* Dashboard */}
+            <Link
+              href="/dashboard"
+              onClick={onCloseMobile}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                pathname === "/dashboard"
+                  ? "bg-brand-100/70 text-brand-800"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              )}
+            >
+              <LayoutGrid
+                className={cn(
+                  "w-4.5 h-4.5",
+                  pathname === "/dashboard" ? "text-brand-700" : "text-slate-400"
+                )}
+              />
+              <span>Dashboard</span>
+            </Link>
+
+            {isAdmin ? (
+              /* Inventaris & Stok Accordion Menu */
+              <div className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => setOpenBarangMenu(!openBarangMenu)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                    isBarangOrStokActive
+                      ? "bg-brand-100/70 text-brand-800"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Boxes
+                      className={cn(
+                        "w-4.5 h-4.5",
+                        isBarangOrStokActive ? "text-brand-700" : "text-slate-400"
+                      )}
+                    />
+                    <span>Inventaris &amp; Stok</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 text-slate-400 transition-transform duration-200",
+                      openBarangMenu && "rotate-180"
+                    )}
+                  />
+                </button>
+
+                {openBarangMenu && (
+                  <div className="pl-4 pr-1 py-1 space-y-1">
+                    {/* 1. Master Data Barang */}
+                    <Link
+                      href="/products"
+                      onClick={onCloseMobile}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                        pathname.startsWith("/products")
+                          ? "bg-brand-50 text-brand-800 font-bold border-l-2 border-brand-600"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <PackageSearch
+                          className={cn(
+                            "w-3.5 h-3.5",
+                            pathname.startsWith("/products")
+                              ? "text-brand-700"
+                              : "text-slate-400"
+                          )}
+                        />
+                        <span>Master Data Barang</span>
+                      </div>
+                    </Link>
+
+                    {/* 2. Catat Stok Masuk */}
+                    <Link
+                      href="/stok"
+                      onClick={onCloseMobile}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                        pathname.startsWith("/stok")
+                          ? "bg-brand-50 text-brand-800 font-bold border-l-2 border-brand-600"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <PackagePlus
+                          className={cn(
+                            "w-3.5 h-3.5",
+                            pathname.startsWith("/stok")
+                              ? "text-brand-700"
+                              : "text-slate-400"
+                          )}
+                        />
+                        <span>Catat Stok Masuk</span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Kasir Only: Catat Stok Masuk */
+              <Link
+                href="/stok"
+                onClick={onCloseMobile}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                  pathname.startsWith("/stok")
+                    ? "bg-brand-100/70 text-brand-800"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <PackagePlus
+                  className={cn(
+                    "w-4.5 h-4.5",
+                    pathname.startsWith("/stok") ? "text-brand-700" : "text-slate-400"
+                  )}
+                />
+                <span>Catat Stok Masuk</span>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <>
+                {/* Manajemen Akun */}
+                <Link
+                  href="/pengguna"
+                  onClick={onCloseMobile}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                    pathname.startsWith("/pengguna")
+                      ? "bg-brand-100/70 text-brand-800"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  )}
+                >
+                  <UserCog
+                    className={cn(
+                      "w-4.5 h-4.5",
+                      pathname.startsWith("/pengguna")
+                        ? "text-brand-700"
+                        : "text-slate-400"
+                    )}
+                  />
+                  <span>Manajemen Akun</span>
+                </Link>
+
+                {/* Pengaturan Toko */}
+                <Link
+                  href="/pengaturan"
+                  onClick={onCloseMobile}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
+                    pathname.startsWith("/pengaturan")
+                      ? "bg-brand-100/70 text-brand-800"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  )}
+                >
+                  <Sliders
+                    className={cn(
+                      "w-4.5 h-4.5",
+                      pathname.startsWith("/pengaturan")
+                        ? "text-brand-700"
+                        : "text-slate-400"
+                    )}
+                  />
+                  <span>Pengaturan</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
 
-        {/* Master Data (Admin Only) */}
-        {isAdmin && (
-          <div>
-            <div className="px-3 mb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Master Data
+        {/* Sidebar Bottom Profile Section */}
+        <div className="p-4 border-t border-slate-100 space-y-3">
+          {/* Toko Status Pill */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between text-xs font-semibold gap-2">
+            <div className="flex items-center gap-2 text-slate-700 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-emerald-500 animate-pulse" />
+              <span className="truncate font-medium">{storeName}</span>
             </div>
-            <nav className="space-y-1">
-              {masterNav.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
+            <span className="text-brand-700 font-bold bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200 shrink-0 text-[11px]">
+              Buka
+            </span>
+          </div>
+
+          {/* User Profile Card */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-800 border border-brand-200 flex items-center justify-center font-bold text-xs shrink-0">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="overflow-hidden min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">
+                  {user.name}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group",
-                      item.active
-                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                      "inline-block w-1.5 h-1.5 rounded-full",
+                      isAdmin ? "bg-indigo-500" : "bg-emerald-500"
+                    )}
+                  />
+                  <p
+                    className={cn(
+                      "text-[10px] font-semibold uppercase tracking-wider",
+                      isAdmin ? "text-indigo-600" : "text-emerald-600"
                     )}
                   >
-                    <Icon className={cn("w-5 h-5", item.active ? "text-white" : "text-slate-400 group-hover:text-emerald-400")} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        )}
+                    {isAdmin ? "Admin Toko" : "Kasir POS"}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        {/* Finance & Reports (Admin Only) */}
-        {isAdmin && (
-          <div>
-            <div className="px-3 mb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Keuangan & Laporan
-            </div>
-            <nav className="space-y-1">
-              {reportNav.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group",
-                      item.active
-                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                    )}
-                  >
-                    <Icon className={cn("w-5 h-5", item.active ? "text-white" : "text-slate-400 group-hover:text-emerald-400")} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Keluar / Ganti Shift"
+              className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-        )}
-
-        {/* System Settings & Users (Admin Only) */}
-        {isAdmin && (
-          <div>
-            <div className="px-3 mb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Sistem
-            </div>
-            <nav className="space-y-1">
-              {systemNav.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group",
-                      item.active
-                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                    )}
-                  >
-                    <Icon className={cn("w-5 h-5", item.active ? "text-white" : "text-slate-400 group-hover:text-emerald-400")} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        )}
-      </div>
-
-      {/* User Footer Profile */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950/40">
-        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 border border-emerald-500/30 text-xs">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="truncate">
-              <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-              <span className={cn(
-                "text-[10px] font-medium px-1.5 py-0.2 rounded-md uppercase tracking-wider",
-                isAdmin ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-              )}>
-                {user.role}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            title="Keluar dari sistem"
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

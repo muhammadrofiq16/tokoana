@@ -1,0 +1,146 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("kasir") // "admin" | "kasir"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Customer {
+  id           Int           @id @default(autoincrement())
+  name         String
+  phone        String?
+  type         String        @default("retail") // "retail" | "reseller"
+  notes        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  transactions Transaction[]
+
+  @@map("customers")
+}
+
+model Product {
+  id           Int               @id @default(autoincrement())
+  sku          String            @unique
+  barcode      String?
+  name         String
+  category     String
+  stock        Int               @default(0)
+  minStock     Int               @default(5) @map("min_stock")
+  expiryDate   DateTime?         @map("expiry_date")
+  unit         String            @default("Pcs")
+  costPrice    Decimal           @default(0) @map("cost_price") @db.Decimal(12, 2)
+  supplierName String?           @map("supplier_name")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  units        ProductUnit[]
+  movements    StockMovement[]
+  items        TransactionItem[]
+
+  @@map("products")
+}
+
+model ProductUnit {
+  id               Int        @id @default(autoincrement())
+  productId        Int        @map("product_id")
+  unitName         String     @map("unit_name")
+  conversionFactor Int        @map("conversion_factor")
+  sortOrder        Int        @default(0) @map("sort_order")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  product          Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceTier        PriceTier?
+
+  @@map("product_units")
+}
+
+model PriceTier {
+  id              Int         @id @default(autoincrement())
+  productUnitId   Int         @unique @map("product_unit_id")
+  priceRetail     Decimal     @default(0) @map("price_retail") @db.Decimal(12, 2)
+  priceWholesale  Decimal     @default(0) @map("price_wholesale") @db.Decimal(12, 2)
+  minWholesaleQty Int?        @default(1) @map("min_wholesale_qty")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  productUnit     ProductUnit @relation(fields: [productUnitId], references: [id], onDelete: Cascade)
+
+  @@map("price_tiers")
+}
+
+model Transaction {
+  id            Int               @id @default(autoincrement())
+  invoiceNumber String            @unique @map("invoice_number")
+  paymentMethod String            @default("Tunai") @map("payment_method")
+  totalAmount   Decimal           @default(0) @map("total_amount") @db.Decimal(14, 2)
+  paidAmount    Decimal           @default(0) @map("paid_amount") @db.Decimal(14, 2)
+  changeAmount  Decimal           @default(0) @map("change_amount") @db.Decimal(14, 2)
+  cashierName   String            @default("Kasir") @map("cashier_name")
+  customerName  String?           @map("customer_name")
+  customerId    Int?              @map("customer_id")
+  saleMode      String            @default("eceran") @map("sale_mode") // "eceran" | "grosir"
+  status        String            @default("success") // "success" | "refunded" | "void"
+  notes         String?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  customer      Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items         TransactionItem[]
+
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            Int         @id @default(autoincrement())
+  transactionId Int         @map("transaction_id")
+  productId     Int         @map("product_id")
+  productName   String      @map("product_name")
+  quantity      Int
+  unit          String
+  unitPrice     Decimal     @map("unit_price") @db.Decimal(12, 2)
+  subtotal      Decimal     @map("subtotal") @db.Decimal(14, 2)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("transaction_items")
+}
+
+model StockMovement {
+  id             Int      @id @default(autoincrement())
+  productId      Int      @map("product_id")
+  type           String   @default("in") // "in" | "out" | "damaged" | "return" | "sale"
+  quantity       Int
+  unit           String   @default("Unit")
+  sourceCategory String   @default("Supplier") @map("source_category")
+  notes          String?
+  userName       String   @default("Petugas") @map("user_name")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("stock_movements")
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

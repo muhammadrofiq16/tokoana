@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   Database,
   PackagePlus,
+  ScanEye,
 } from "lucide-react";
+import InvoiceScannerModal from "@/components/stok/InvoiceScannerModal";
 
 interface ProductOption {
   id: number;
@@ -57,6 +59,7 @@ export default function StockClient({
 
   const [movements, setMovements] = useState<StockMovementItem[]>(initialMovements);
   const [filter, setFilter] = useState<"all" | "in" | "out">("all");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Modal State for manual input
   const [showAddModal, setShowAddModal] = useState(false);
@@ -154,6 +157,17 @@ export default function StockClient({
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Button Scan Faktur AI */}
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
+          >
+            <ScanEye className="w-4 h-4" />
+            <span>Scan Faktur (AI)</span>
+            <span className="bg-white/20 text-[10px] px-1.5 py-0.5 rounded font-bold">BARU</span>
+          </button>
+
           {/* Button Buka Form Tambah */}
           <button
             type="button"
@@ -483,6 +497,17 @@ export default function StockClient({
           </div>
         </div>
       )}
+      {/* AI Invoice Scanner Modal */}
+      <InvoiceScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        products={products}
+        onSuccessSave={(count, supplier) => {
+          setSuccessMsg(`Faktur berhasil diproses! ${count} barang dari ${supplier} telah ditambahkan ke stok.`);
+          setTimeout(() => setSuccessMsg(null), 5000);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

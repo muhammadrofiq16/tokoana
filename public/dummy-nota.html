@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAKTUR PENJUALAN - PT INDOMARCO ADI PRIMA</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #525659;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .invoice-card {
+      background: #faf8f0;
+      width: 780px;
+      padding: 36px 40px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      border-radius: 4px;
+      color: #111;
+      position: relative;
+      border: 1px dashed #bbb;
+    }
+    .header {
+      border-bottom: 2px dashed #333;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+    .company-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .company-sub {
+      font-size: 11px;
+      color: #444;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+    .doc-type {
+      text-align: right;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .table-container {
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      border-top: 2px solid #222;
+      border-bottom: 2px solid #222;
+      padding: 8px 4px;
+      text-align: left;
+      font-weight: bold;
+    }
+    td {
+      padding: 7px 4px;
+      border-bottom: 1px dotted #ccc;
+    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .summary-box {
+      border-top: 2px solid #222;
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .grand-total {
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .footer-signatures {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      text-align: center;
+      font-size: 11px;
+    }
+    .sig-line {
+      margin-top: 55px;
+      border-top: 1px solid #333;
+      display: inline-block;
+      width: 80%;
+    }
+    .stamp {
+      position: absolute;
+      right: 90px;
+      bottom: 60px;
+      border: 3px solid #1a365d;
+      color: #1a365d;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      transform: rotate(-8deg);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    .action-bar {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-family: sans-serif;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    .btn:hover { background: #047857; }
+    @media print {
+      body { background: white; padding: 0; }
+      .invoice-card { box-shadow: none; border: none; width: 100%; }
+      .action-bar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="action-bar">
+    <button class="btn" onclick="window.print()">Cetak / Simpan PDF</button>
+  </div>
+
+  <div class="invoice-card" id="nota">
+    <!-- Header -->
+    <div class="header">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div class="company-title">PT. INDOMARCO ADI PRIMA</div>
+          <div class="company-sub">
+            DISTRIBUTOR RESMI CONSUMER GOODS & SEMBAKO<br>
+            Kawasan Pergudangan Pluit Raya No. 18, Jakarta Utara<br>
+            Telp: (021) 662-8899 / Fax: (021) 662-8890
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div class="doc-type">FAKTUR PENJUALAN</div>
+          <div style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #b91c1c;">
+            NO: INV/2026/XI/8842
+          </div>
+          <div style="font-size: 11px; margin-top: 2px;">
+            TGL: 18-11-2026
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer & Delivery Info -->
+    <div class="info-grid">
+      <div>
+        <strong>KEPADA YTH:</strong><br>
+        <strong>TOKO ANA</strong><br>
+        Jl. Raya Pasar Minggu No. 45<br>
+        Jakarta Selatan<br>
+        UP: Ibu Ana / Budi Santoso (0812-9876-5432)
+      </div>
+      <div>
+        <strong>PENGIRIMAN & PEMBAYARAN:</strong><br>
+        Salesman : Hendra Setiawan (SLS-04)<br>
+        No. Kend : B 9428 UX / Driver: Joko<br>
+        Termin   : Tunai / COD (Cash On Delivery)<br>
+        Jatuh Tempo: 18-11-2026
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30px;" class="text-center">NO</th>
+            <th style="width: 100px;">KODE SKU</th>
+            <th>NAMA BARANG</th>
+            <th style="width: 70px;" class="text-center">QTY</th>
+            <th style="width: 70px;">SATUAN</th>
+            <th style="width: 110px;" class="text-right">HARGA (RP)</th>
+            <th style="width: 120px;" class="text-right">TOTAL (RP)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center">1</td>
+            <td>BRG-001</td>
+            <td>INDOMIE MI GORENG 85G (ISI 40 BKS)</td>
+            <td class="text-center"><strong>5</strong></td>
+            <td>Dus</td>
+            <td class="text-right">110.000</td>
+            <td class="text-right">550.000</td>
+          </tr>
+          <tr>
+            <td class="text-center">2</td>
+            <td>BRG-014</td>
+            <td>BIMOLI MINYAK GORENG POUCH 2L</td>
+            <td class="text-center"><strong>4</strong></td>
+            <td>Dus</td>
+            <td class="text-right">199.200</td>
+            <td class="text-right">796.800</td>
+          </tr>
+          <tr>
+            <td class="text-center">3</td>
+            <td>BRG-082</td>
+            <td>TEH PUCUK HARUM 350ML (ISI 24 BTL)</td>
+            <td class="text-center"><strong>3</strong></td>
+            <td>Dus</td>
+            <td class="text-right">72.000</td>
+            <td class="text-right">216.000</td>
+          </tr>
+          <tr>
+            <td class="text-center">4</td>
+            <td>BRG-025</td>
+            <td>GULA PASIR GULAKU 1KG</td>
+            <td class="text-center"><strong>2</strong></td>
+            <td>Karung</td>
+            <td class="text-right">320.000</td>
+            <td class="text-right">640.000</td>
+          </tr>
+          <tr>
+            <td class="text-center">5</td>
+            <td>BRG-050</td>
+            <td>KOPI KAPAL API SPESIAL MIX 10X24G</td>
+            <td class="text-center"><strong>4</strong></td>
+            <td>Dus</td>
+            <td class="text-right">125.000</td>
+            <td class="text-right">500.000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-box">
+      <div>
+        <em>Terbilang: Dua Juta Tujuh Ratus Dua Puluh Delapan Ribu Delapan Ratus Rupiah</em><br>
+        <span style="font-size: 11px; color: #555;">Catatan: Barang yang sudah diterima dalam kondisi baik tidak dapat dikembalikan.</span>
+      </div>
+      <div style="min-width: 250px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Subtotal:</span>
+          <span>Rp 2.702.800</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>PPN 11%:</span>
+          <span>Rp 0 (Non-PKP)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span>Ongkir / Kirim:</span>
+          <span>Rp 0</span>
+        </div>
+        <div class="grand-total" style="display: flex; justify-content: space-between; border-top: 1px solid #444; padding-top: 5px;">
+          <span>TOTAL BAYAR:</span>
+          <span>Rp 2.702.800</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="footer-signatures">
+      <div>
+        Penerima / Toko
+        <div class="sig-line"></div>
+        ( .................... )
+      </div>
+      <div>
+        Pengemudi / Driver
+        <div class="sig-line"></div>
+        ( Joko Santoso )
+      </div>
+      <div>
+        Hormat Kami,
+        <div class="sig-line"></div>
+        ( Bag. Administrasi )
+      </div>
+    </div>
+
+    <!-- Blue Lunas Stamp -->
+    <div class="stamp">
+      ★ LUNAS ★<br>
+      PT. INDOMARCO
+    </div>
+  </div>
+
+</body>
+</html>

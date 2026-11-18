@@ -9,9 +9,9 @@ export async function GET(req: Request) {
 
     const where: any = {};
     if (filter === "in") {
-      where.type = "in";
+      where.type = { in: ["in", "return"] };
     } else if (filter === "out") {
-      where.type = { in: ["out", "damaged", "return"] };
+      where.type = { in: ["out", "damaged", "sale"] };
     }
 
     const movements = await prisma.stockMovement.findMany({
@@ -50,15 +50,21 @@ export async function POST(req: Request) {
 
     const result = await prisma.$transaction(async (tx) => {
       // Update product stock
-      if (type === "in") {
+      if (type === "in" || type === "return") {
         await tx.product.update({
           where: { id: prodId },
           data: { stock: { increment: qty } },
         });
       } else {
+        // For "out" and "damaged", check if enough stock is available
+        if (product.stock < qty) {
+          throw new Error(
+            `Stok tidak mencukupi. Sisa stok: ${product.stock} ${product.unit}, dibutuhkan: ${qty}.`
+          );
+        }
         await tx.product.update({
           where: { id: prodId },
-          data: { stock: { decrement: Math.min(product.stock, qty) } },
+          data: { stock: { decrement: qty } },
         });
       }
 

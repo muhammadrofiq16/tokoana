@@ -17,7 +17,7 @@ interface ExpiringItem {
   name: string;
   stock: number;
   unit: string;
-  expiryDate: Date | null;
+  expiryDate: Date | string | null;
 }
 
 interface NotificationDropdownProps {

@@ -2,7 +2,23 @@
 
 import { useState } from "react";
 import Sidebar from "./Sidebar";
-import { Menu } from "lucide-react";
+import Navbar from "./Navbar";
+
+interface LowStockItem {
+  id: number;
+  name: string;
+  stock: number;
+  minStock: number;
+  unit: string;
+}
+
+interface ExpiringItem {
+  id: number;
+  name: string;
+  stock: number;
+  unit: string;
+  expiryDate: string | null;
+}
 
 interface AppShellProps {
   user: {
@@ -11,10 +27,17 @@ interface AppShellProps {
     email: string;
     role: string;
   };
+  lowStockProducts?: LowStockItem[];
+  expiringProducts?: ExpiringItem[];
   children: React.ReactNode;
 }
 
-export default function AppShell({ user, children }: AppShellProps) {
+export default function AppShell({
+  user,
+  lowStockProducts = [],
+  expiringProducts = [],
+  children,
+}: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -25,17 +48,12 @@ export default function AppShell({ user, children }: AppShellProps) {
         onCloseMobile={() => setSidebarOpen(false)}
       />
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile quick header button if needed, handled inside Navbar or here */}
-        <div className="lg:hidden fixed top-3.5 left-4 z-40">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 text-slate-600 bg-white border border-slate-200 rounded-lg shadow-xs hover:bg-slate-50"
-            aria-label="Buka Menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Proper sticky Navbar — no longer a floating fixed button */}
+        <Navbar
+          onOpenMobileSidebar={() => setSidebarOpen(true)}
+          lowStockProducts={lowStockProducts}
+          expiringProducts={expiringProducts}
+        />
         <main className="flex-1 p-4 md:p-8 min-w-0">{children}</main>
       </div>
     </div>

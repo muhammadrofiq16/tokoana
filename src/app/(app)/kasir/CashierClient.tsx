@@ -270,7 +270,7 @@ export default function CashierClient({
   // Quick cash amounts
   const quickAmounts = useMemo(() => {
     const list = [10000, 20000, 50000, 100000, 200000];
-    return list.filter((amt) => amt > totalAmount);
+    return list.filter((amt) => amt >= totalAmount);
   }, [totalAmount]);
 
   const updateQty = (index: number, newQty: number) => {

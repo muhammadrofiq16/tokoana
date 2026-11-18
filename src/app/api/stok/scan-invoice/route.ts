@@ -31,6 +31,15 @@ export async function POST(req: Request) {
       mimeType = file.type || "image/jpeg";
       const arrayBuffer = await file.arrayBuffer();
       imageBuffer = Buffer.from(arrayBuffer);
+
+      // Validate file size (max 10MB)
+      const MAX_SIZE = 10 * 1024 * 1024;
+      if (imageBuffer.byteLength > MAX_SIZE) {
+        return NextResponse.json(
+          { error: "Ukuran file terlalu besar. Maksimal 10MB." },
+          { status: 400 }
+        );
+      }
     } else {
       const json = await req.json();
       if (!json.image) {

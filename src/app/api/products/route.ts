@@ -23,14 +23,9 @@ export async function GET(req: Request) {
       where.category = category;
     }
 
-    if (status === "aman") {
-      where.stock = { gt: prisma.product.fields?.minStock || 5 };
-    } else if (status === "menipis") {
-      where.AND = [
-        { stock: { gt: 0 } },
-        { stock: { lte: 10 } },
-      ];
-    } else if (status === "habis") {
+    // Note: Prisma doesn't support column-to-column comparisons in where clauses.
+    // "aman" and "menipis" are filtered in-memory after fetching.
+    if (status === "habis") {
       where.stock = 0;
     }
 
@@ -45,7 +40,15 @@ export async function GET(req: Request) {
       orderBy: { name: "asc" },
     });
 
-    return NextResponse.json(products);
+    // Apply column-to-column status filters in JS
+    let filtered = products;
+    if (status === "aman") {
+      filtered = products.filter((p) => p.stock > p.minStock);
+    } else if (status === "menipis") {
+      filtered = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+    }
+
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json({ error: "Gagal mengambil data produk." }, { status: 500 });

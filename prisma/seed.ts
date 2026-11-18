@@ -265,6 +265,144 @@ async function main() {
   }
 
   console.log(`✅ ${products.length} Products with multi-tier pricing seeded`);
+
+  // 5. Seed Transactions (Penjualan untuk Demo Dashboard)
+  const allDbProds = await prisma.product.findMany();
+  const prodMap = new Map(allDbProds.map((p) => [p.sku, p]));
+
+  const indomie = prodMap.get("BRG-001") || allDbProds[0];
+  const bimoli = prodMap.get("BRG-014") || allDbProds[1] || indomie;
+  const teh = prodMap.get("BRG-082") || allDbProds[2] || indomie;
+  const gula = prodMap.get("BRG-025") || allDbProds[3] || indomie;
+  const kopi = prodMap.get("BRG-050") || allDbProds[4] || indomie;
+
+  if (indomie) {
+    const dummySales = [
+      {
+        invoiceNumber: "INV-20261115-001",
+        paymentMethod: "Tunai",
+        totalAmount: 48500,
+        paidAmount: 50000,
+        changeAmount: 1500,
+        cashierName: "Kasir 1",
+        customerName: "Pelanggan Umum",
+        saleMode: "eceran",
+        status: "success",
+        createdAt: new Date("2026-11-15T09:30:00+07:00"),
+        items: [
+          { productId: indomie.id, productName: "Indomie Mi Goreng 85g", quantity: 3, unit: "Bungkus", unitPrice: 3500, subtotal: 10500 },
+          { productId: teh.id, productName: "Teh Pucuk Harum 350ml", quantity: 2, unit: "Botol", unitPrice: 4000, subtotal: 8000 },
+          { productId: gula.id, productName: "Gula Pasir Gulaku 1kg", quantity: 1, unit: "Bungkus", unitPrice: 18500, subtotal: 18500 },
+        ],
+      },
+      {
+        invoiceNumber: "INV-20261116-002",
+        paymentMethod: "QRIS",
+        totalAmount: 450000,
+        paidAmount: 450000,
+        changeAmount: 0,
+        cashierName: "Kasir 1",
+        customerName: "Warung Bu Siti",
+        saleMode: "grosir",
+        status: "success",
+        createdAt: new Date("2026-11-16T11:15:00+07:00"),
+        items: [
+          { productId: indomie.id, productName: "Indomie Mi Goreng 85g", quantity: 2, unit: "Dus (40 Bks)", unitPrice: 120000, subtotal: 240000 },
+          { productId: bimoli.id, productName: "Bimoli Minyak Goreng Pouch 2L", quantity: 1, unit: "Dus (6 Pouch)", unitPrice: 210000, subtotal: 210000 },
+        ],
+      },
+      {
+        invoiceNumber: "INV-20261116-003",
+        paymentMethod: "Tunai",
+        totalAmount: 87500,
+        paidAmount: 100000,
+        changeAmount: 12500,
+        cashierName: "Kasir 1",
+        customerName: "Bpk. Joko Santoso",
+        saleMode: "eceran",
+        status: "success",
+        createdAt: new Date("2026-11-16T16:45:00+07:00"),
+        items: [
+          { productId: bimoli.id, productName: "Bimoli Minyak Goreng Pouch 2L", quantity: 1, unit: "Pouch", unitPrice: 36500, subtotal: 36500 },
+          { productId: gula.id, productName: "Gula Pasir Gulaku 1kg", quantity: 2, unit: "Bungkus", unitPrice: 18500, subtotal: 37000 },
+          { productId: kopi.id, productName: "Kopi Kapal Api Spesial Mix 10x24g", quantity: 1, unit: "Renceng", unitPrice: 14000, subtotal: 14000 },
+        ],
+      },
+      {
+        invoiceNumber: "INV-20261117-004",
+        paymentMethod: "Transfer Bank",
+        totalAmount: 624000,
+        paidAmount: 624000,
+        changeAmount: 0,
+        cashierName: "Kasir 1",
+        customerName: "Toko Rejeki Grosir",
+        saleMode: "grosir",
+        status: "success",
+        createdAt: new Date("2026-11-17T10:20:00+07:00"),
+        items: [
+          { productId: indomie.id, productName: "Indomie Mi Goreng 85g", quantity: 3, unit: "Dus (40 Bks)", unitPrice: 120000, subtotal: 360000 },
+          { productId: kopi.id, productName: "Kopi Kapal Api Spesial Mix 10x24g", quantity: 2, unit: "Dus (10 Renceng)", unitPrice: 132000, subtotal: 264000 },
+        ],
+      },
+      {
+        invoiceNumber: "INV-20261117-005",
+        paymentMethod: "QRIS",
+        totalAmount: 29000,
+        paidAmount: 29000,
+        changeAmount: 0,
+        cashierName: "Kasir 1",
+        customerName: "Ibu Rina",
+        saleMode: "eceran",
+        status: "success",
+        createdAt: new Date("2026-11-17T14:10:00+07:00"),
+        items: [
+          { productId: kopi.id, productName: "Kopi Kapal Api Spesial Mix 10x24g", quantity: 1, unit: "Renceng", unitPrice: 14500, subtotal: 14500 },
+          { productId: teh.id, productName: "Teh Pucuk Harum 350ml", quantity: 2, unit: "Botol", unitPrice: 4000, subtotal: 8000 },
+          { productId: indomie.id, productName: "Indomie Mi Goreng 85g", quantity: 1, unit: "Bungkus", unitPrice: 3500, subtotal: 3500 },
+        ],
+      },
+      {
+        invoiceNumber: "INV-20261118-006",
+        paymentMethod: "Tunai",
+        totalAmount: 55000,
+        paidAmount: 100000,
+        changeAmount: 45000,
+        cashierName: "Kasir 1",
+        customerName: "Pelanggan Umum",
+        saleMode: "eceran",
+        status: "success",
+        createdAt: new Date(),
+        items: [
+          { productId: gula.id, productName: "Gula Pasir Gulaku 1kg", quantity: 1, unit: "Bungkus", unitPrice: 18500, subtotal: 18500 },
+          { productId: bimoli.id, productName: "Bimoli Minyak Goreng Pouch 2L", quantity: 1, unit: "Pouch", unitPrice: 36500, subtotal: 36500 },
+        ],
+      },
+    ];
+
+    for (const sale of dummySales) {
+      const existing = await prisma.transaction.findUnique({
+        where: { invoiceNumber: sale.invoiceNumber },
+      });
+
+      if (!existing) {
+        const { items, ...txData } = sale;
+        const createdTx = await prisma.transaction.create({
+          data: txData,
+        });
+
+        for (const item of items) {
+          await prisma.transactionItem.create({
+            data: {
+              transactionId: createdTx.id,
+              ...item,
+            },
+          });
+        }
+      }
+    }
+    console.log(`✅ ${dummySales.length} Sales transactions seeded`);
+  }
+
   console.log("🎉 Seeding selesai dengan sukses!");
 }
 
